@@ -4,8 +4,8 @@ C++ = g++
 CC = gcc
 DFLAGS = 
 OFLAGS = -g -O3
-LFLAGS = -llpsolve55
-CFLAGS = $(OFLAGS) $(DFLAGS) -I. -I/home/wizardus/Desktop/lpsolve -Wno-deprecated
+LFLAGS = -llpsolve55 -ldl -lcolamd
+CFLAGS = $(OFLAGS) $(DFLAGS) -I. -Wno-deprecated
 
 OBJS = bit_vector.o branchPath.o brutePath.o Contraction.o Dijkstra.o Graph.o graphlink.o GraphUtil.o HD.o lpPath.o oneTaxiPath.o path.o PerformanceTimer.o Query.o shortestPath.o simulator.o taxiPath.o taxitree.o treeTaxiPath.o treeSlackTaxiPath.o treeClusterTaxiPath.o Util.o
 PROGS = ./simulator

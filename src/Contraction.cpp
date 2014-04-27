@@ -20,9 +20,9 @@ Contraction::Contraction(Graph & g):graph(g){
 
 	//tmpinshortcutlist.resize(nodesize);
 	tmpoutshortcutlist.resize(nodesize);
-	
+
 	pathIndex = vector<vector<int> >(nodesize, vector<int>(0));
-	pathList = vector<vector<VertexID> >(nodesize, vector<VertexID>(0));	
+	pathList = vector<vector<VertexID> >(nodesize, vector<VertexID>(0));
 
 	srand(time(NULL));
 }
@@ -37,40 +37,40 @@ Contraction::~Contraction(){}
 bool Contraction::dodgingDijkstra(VertexID source, VertexID target, VertexID nid, double limit, double& real_distance) {
 	forall_nodes(graph, vid){
 		nodelist[vid].flaga = false;
-	}	
-	
-	//cout << "Test: source = " << source << ", target = " << target << "." << endl; 
+	}
+
+	//cout << "Test: source = " << source << ", target = " << target << "." << endl;
 	vector<float> dist (nodesize);
 	forall_nodes(graph, vid){
 		dist[vid] = DBL_INFINITY;
 	}
 	dist[source] = 0.0;
-	
-	vector<VertexID> father(nodesize, numeric_limits<VertexID>::max());	
-	
+
+	vector<VertexID> father(nodesize, numeric_limits<VertexID>::max());
+
 	priority_queue<pair<double, VertexID>, vector<pair<double, VertexID> >, QueueComp> Queue;
 	Queue.push(make_pair(0.0, source));
-	
+
 	while (Queue.size() > 0) {
 		float min_dist = Queue.top().first;
 		VertexID vid = Queue.top().second;
 		//cout << "vid = " << vid << ", min_dist = " << min_dist << endl;
 		if (vid == target) break;
 		Queue.pop();
-		if (min_dist > dist[vid]) 	continue; 					// lazy update; 
+		if (min_dist > dist[vid]) 	continue; 					// lazy update;
 		else						nodelist[vid].flaga = true; // settle vertex vid;
-		
-		if (min_dist >= limit) break;		
-		
+
+		if (min_dist >= limit) break;
+
 		forall_outneighbors(graph, vid, eit){
 			if (nodelist[eit->target].flaga) {/*cout << "$ ";*/ continue;} // settled;
 			if (dist[eit->target] > min_dist + eit->weight) {
 				dist[eit->target] = min_dist + eit->weight;
-				Queue.push(make_pair(dist[eit->target], eit->target)); 
+				Queue.push(make_pair(dist[eit->target], eit->target));
 				father[eit->target] = vid; // for test;
-			}	
+			}
 		}
-		
+
 		for (int i = 0; i < tmpoutshortcutlist[vid].size(); i++) {
 			int tmptarget = tmpoutshortcutlist[vid][i].target;
 			if (nodelist[tmptarget].flaga) {/*cout << "$ ";*/ continue;}
@@ -81,18 +81,18 @@ bool Contraction::dodgingDijkstra(VertexID source, VertexID target, VertexID nid
 			}
 		}
 	}
-	
+
 	// check whether nid has been used or not;
-	int c = target; 
+	int c = target;
 	bool used = false;
 	while (father[c] != -1){
 		c = father[c];
-		if(c == nid) {used = true; break;} 
+		if(c == nid) {used = true; break;}
 	}
 	real_distance = dist[target];
 	if (used) return false; // if the middle node is used;
-	
-	
+
+
 	forall_nodes(graph, vid){
 		nodelist[vid].flaga = false;
 	}
@@ -112,7 +112,7 @@ bool Contraction::dodgingDijkstra(VertexID source, VertexID target, VertexID nid
 		cout << endl;
 		cout << "dist: " << dist[target] << ", limit: " << limit << endl;
 	#endif
-	
+
 	if (dist[target] <= limit) { /*cout << "T" << endl;*/ return true;}
 	else { /*cout << "F" << endl;*/ return false;} // the middle node is not used; however their distance is larger than the limit;
 }
@@ -136,9 +136,9 @@ inline bool Contraction::checkDuplicate(VertexID source, VertexID target, Weight
 			break;
 		}
 	}
-		
+
 	if (!isfound) return isfound;
-	
+
 	forall_outneighbors(graph, target, eit){
 		if (eit->target == source) {
 			eit->weight = weight;
@@ -164,8 +164,8 @@ void Contraction::packShortcut(int nid,\
 				vector<vector<VertexID> >& inner_IDs,\
 				vector<int>& matched_pair,\
 				vector<double>& pair_distance){
-	
-	#ifdef CONTRACTION_DEBUG	
+
+	#ifdef CONTRACTION_DEBUG
 		cout << "adding shortcuts..." << endl;
 	#endif
 	assert(matched_pair.size() % 2 == 0);
@@ -176,22 +176,22 @@ void Contraction::packShortcut(int nid,\
 			cout << "source = " << source << ", target = " << target << endl;
 		#endif
 		Weight weight = pair_distance[i/2];
-			
+
 		bool isfound = checkDuplicate(source, target, weight); // if found, update its weight;
 		if (isfound) {
 			#ifdef CONTRACTION_DEBUG
-				cout << "duplicate found!" << endl; 
-			#endif	
+				cout << "duplicate found!" << endl;
+			#endif
 			continue;
 		}else {
 			#ifdef CONTRACTION_DEBUG
 				cout << "no duplicates!" << endl;
-			#endif	
+			#endif
 			addShortCut(source, target, nid, weight, inner_IDs[matched_pair[i]], inner_IDs[matched_pair[i+1]]);
 		}
 	}
 
-	removeEdge(nid);		
+	removeEdge(nid);
 }
 
 /*
@@ -205,8 +205,8 @@ void Contraction::addShortCut(VertexID source,\
 							  vector<VertexID>& inner_ids_target){
 	if (nodelist[source].rank < UINT_INFINITY) cout << "Wrong-ranking" << endl;
 	if (nodelist[target].rank < UINT_INFINITY) cout << "Wrong-ranking" << endl;
-	
-	
+
+
 	vector<VertexID> source_to_target;
 	for (int i = inner_ids_source.size()-1; i >= 0; i--) {
 		source_to_target.push_back( inner_ids_source[i] );
@@ -215,20 +215,20 @@ void Contraction::addShortCut(VertexID source,\
 	for ( int i = 0; i < inner_ids_target.size(); i++ ) {
 		source_to_target.push_back( inner_ids_target[i] );
 	}
-	
+
 	vector<VertexID> target_to_source;
 	for ( int i = source_to_target.size()-1; i >= 0; i-- ) {
 		target_to_source.push_back(source_to_target[i]);
 	}
-	
+
 	ShortCutEdge shortcut_edge;
 	shortcut_edge.target = source;
 	shortcut_edge.flaga = false;
 	shortcut_edge.flagb = false;
 	shortcut_edge.innerIDs = source_to_target;
-	shortcut_edge.weight = weight;	
+	shortcut_edge.weight = weight;
 
-	#ifdef CONTRACTION_DEBUG	
+	#ifdef CONTRACTION_DEBUG
 		cout<< "print out the edges in the path:";
 		cout << source;
 		for ( int i = 0; i < source_to_target.size(); i++ ) {
@@ -236,11 +236,11 @@ void Contraction::addShortCut(VertexID source,\
 		}
 		cout << "->" << target << endl;
 	#endif
-		
+
 	//tmpinshortcutlist[target].push_back( shortcut_edge );
 	shortcut_edge.innerIDs = target_to_source;
 	tmpoutshortcutlist[target].push_back( shortcut_edge );
-	
+
 	shortcut_edge.target = target;
 	//tmpinshortcutlist[source].push_back( shortcut_edge );
 	shortcut_edge.innerIDs = source_to_target;
@@ -269,7 +269,7 @@ void Contraction::removeEdge(int nid) {
 			// }
 		// }
 	// }
-	
+
 	// remove the shortcuts;
 	// for ( int i = 0; i < tmpinshortcutlist[nid].size(); i++ ) {
 		// tmpinshortcutlist[nid][i].flaga = true;
@@ -289,8 +289,8 @@ void Contraction::removeEdge(int nid) {
 				tmpoutshortcutlist[vid][j].flaga = true;
 				break;
 			}
-		}		
-	}	
+		}
+	}
 }
 
 /*  this function computes the edge difference for vertex nid;
@@ -306,7 +306,7 @@ int Contraction::computeEdgeDifference(int nid,\
 	vector<vector<VertexID> >(0).swap(inner_IDs);
 	vector<int>(0).swap(matched_pair);
 	vector<double>(0).swap(pair_distance);
-	
+
 	// deal with neighbors in original graph;
 	forall_outneighbors(graph, nid, eit){
 		if (eit->flaga) continue; // removed edges;
@@ -318,7 +318,7 @@ int Contraction::computeEdgeDifference(int nid,\
 			inner_IDs.push_back(vector<VertexID>(0));
 		}
 	}
-	
+
 	// deal with neighbors linked with shortcuts;
 	// cout << graph.num_vertices() << endl;
 	// cout << tmpoutshortcutlist.size() << endl;
@@ -326,16 +326,16 @@ int Contraction::computeEdgeDifference(int nid,\
 	for (int i = 0; i < tmpoutshortcutlist[nid].size(); i++){
 		if (tmpoutshortcutlist[nid][i].flaga) continue;
 		else {
-			if (nodelist[tmpoutshortcutlist[nid][i].target].rank<UINT_INFINITY) cout << "Should not be dealed with!" << endl;		
+			if (nodelist[tmpoutshortcutlist[nid][i].target].rank<UINT_INFINITY) cout << "Should not be dealed with!" << endl;
 			neighbors.push_back(tmpoutshortcutlist[nid][i].target);
 			distance.push_back(tmpoutshortcutlist[nid][i].weight);
 			inner_IDs.push_back(tmpoutshortcutlist[nid][i].innerIDs);
 		}
 	}
-	
+
 	// for (int i = 0; i < neighbors.size(); i++) cout << neighbors[i] << " ";
 	// cout << endl;
-	
+
 	// calculate edge difference pairwisely;
 	// this part could be expensive when average degree is high;
 	int edgedifference = 0;
@@ -345,7 +345,7 @@ int Contraction::computeEdgeDifference(int nid,\
 			double real_distance = DBL_INFINITY;
 			double limit = distance[i]+distance[j];
 			bool isfound = dodgingDijkstra(neighbors[i], neighbors[j], nid, limit, real_distance);
-			
+
 			#ifdef CONTRACTION_DEBUG
 				// check the correctness of dodgingDijkstra function;
 				cout << "from " << neighbors[i] << " to " << neighbors[j] << " through " << nid << endl;
@@ -356,17 +356,17 @@ int Contraction::computeEdgeDifference(int nid,\
 				}
 				cout << "~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
 			#endif
-			
+
 			if (!isfound) {
 				edgedifference++;
 				matched_pair.push_back(i);
 				matched_pair.push_back(j);
 				pair_distance.push_back(min(real_distance, limit));
 			}
-		}	
+		}
 	}
-	
-	
+
+
 	//cout << "[added shortcuts] for " << nid << ": " << edgedifference << endl;
 	//cout << "[removed edges]   for " << nid << ": " << neighbors.size() << endl;
 	edgedifference = edgedifference - neighbors.size();
@@ -391,10 +391,10 @@ void Contraction::computeShortcuts(bool gp){
 		queue.push(make_pair(edgedifference, nid));
 	}
 	cout << "Done." << endl;
-	
+
 	// rank the nodes;
 	// cout << "Running Queue:~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-	
+
 	int current_rank = 0;
 	while (queue.size()>1) {
 		int edge_difference = queue.top().first;
@@ -404,33 +404,33 @@ void Contraction::computeShortcuts(bool gp){
 		queue.pop();
 		#ifdef CONTRACTION_DEBUG
 			cout << nid << ": edge_difference = " << edge_difference << endl;
-		#endif	
-		
+		#endif
+
 		int current_edge_difference = computeEdgeDifference(nid, neighbors, distance, inner_IDs, matched_pair, pair_distance);
 		if (current_edge_difference <= queue.top().first) { // lazy update;
 			#ifdef CONTRACTION_DEBUG
 				cout << "[result]: add short cut." << endl;
-			#endif	
+			#endif
 			packShortcut(nid, neighbors, distance, inner_IDs, matched_pair, pair_distance);
 			nodelist[nid].rank = current_rank++;
 		}else{
 			#ifdef CONTRACTION_DEBUG
 				cout << "[result]: insert it again" << endl;
-			#endif	
+			#endif
 			queue.push(make_pair(current_edge_difference, nid));
 		}
 	}
 	if (nodelist[queue.top().second].rank == UINT_INFINITY) nodelist[queue.top().second].rank = current_rank;
-	
+
 	#ifdef CONTRACTION_DEBUG
 		forall_nodes(graph, nid){
 			cout << "rank " << nid << ":" << nodelist[nid].rank << endl;
 		}
 	#endif
-	
-	
+
+
 	// insert shortcut into graph;
-	#ifdef CONTRACTION_DEBUG	
+	#ifdef CONTRACTION_DEBUG
 		// cout << "inShortCut:" << endl;
 		// for ( int i = 0; i < tmpinshortcutlist.size(); i++ ) {
 			// cout << i << ":";
@@ -448,12 +448,12 @@ void Contraction::computeShortcuts(bool gp){
 			cout << endl;
 		}
 	#endif
-	
-	#ifdef CONTRACTION_DEBUG	
+
+	#ifdef CONTRACTION_DEBUG
 		checkShortCutCorrectness();
 		checkShortCutCompleteness(2000);
 	#endif
-	
+
 	// two things are produced: the shortcut edges, and the node rank;
 	cout << "insert shortcut ..." << endl;
 	graph.insertShortcut(tmpinshortcutlist, tmpoutshortcutlist);
@@ -462,24 +462,24 @@ void Contraction::computeShortcuts(bool gp){
 		graph[i].rank = nodelist[i].rank;
 		graph[i].id = i;
 	}
-	
+
 	//cout << "Insert short cut!" << endl;
 	//graph.printShortcut();
 	// print rank;
 	// for ( int i = 0; i < nodelist.size(); i++ ) {
 		// cout << i << "::" << nodelist[i].rank << endl;
 	// }
-	
+
 	// create labels;
 	cout << "insert label ..." << endl;
 	generateLabel(gp);
 	cout << "done." << endl;
-	
+
 	// check the correctness of labels;
 	#ifdef CONTRACTION_DEBUG
 		checkLabelCorrectness();
 	#endif
-	
+
 	// check the correctness of paths;
 	#ifdef CONTRACTION_DEBUG
 		checkPathCorrectness();
@@ -505,26 +505,26 @@ void Contraction::checkShortCutCorrectness(){
 			// }
 			// cout << v << endl;
 			// cout << "distance: " << tmpoutshortcutlist[i][j].weight << endl;
-			
+
 			// the innerIDs should has lower ranks than the two ends;
 			for (int k = 0; k < tmpoutshortcutlist[i][j].innerIDs.size(); k++) {
 				if (nodelist[tmpoutshortcutlist[i][j].innerIDs[k]].rank > nodelist[u].rank ||\
 					nodelist[tmpoutshortcutlist[i][j].innerIDs[k]].rank > nodelist[v].rank) {
-					cout << "Wrong: rank!" << endl;	
+					cout << "Wrong: rank!" << endl;
 					cout << tmpoutshortcutlist[i][j].innerIDs[k] << ": " << nodelist[tmpoutshortcutlist[i][j].innerIDs[k]].rank << endl;
 					cout << u << ": " << nodelist[u].rank << endl;
 					cout << v << ": " << nodelist[v].rank << endl;
  				}
 			}
-			
+
 			// the shortcut distance between u and v should equal the sum of edge distances from u to v.
 			// cout << "Results from dijkstra search:" << endl;
 			double dist = runDijkstra(u, v);
 			// cout << "distance: " << dist << endl;
-			
+
 			cout << "Comparison distance: ";
 			if (fabs(dist - tmpoutshortcutlist[i][j].weight) <= 1e-5) cout << "Right!" << endl;
-			else { cout << "Wrong: distance!" << endl; error++; 
+			else { cout << "Wrong: distance!" << endl; error++;
 				cout << "Dijkstra: " << dist << endl;
 				cout << "Shortcut: " << tmpoutshortcutlist[i][j].weight << endl;
 			}
@@ -534,44 +534,44 @@ void Contraction::checkShortCutCorrectness(){
 }
 
 double Contraction::runDijkstra(VertexID source, VertexID target){
-	//cout << "Test: source = " << source << ", target = " << target << "." << endl; 
+	//cout << "Test: source = " << source << ", target = " << target << "." << endl;
 	vector<double> dist (nodesize);
 	for (int vid = 0; vid < nodesize; vid++) {
 		dist[vid] = DBL_INFINITY;
 	}
 	dist[source] = 0.0;
-	
+
 	vector<VertexID> father(nodesize, -1);
-	
+
 	priority_queue<pair<double, VertexID>, vector<pair<double, VertexID> >, QueueComp> Queue;
 	Queue.push(make_pair(0.0, source));
-	
+
 	for ( int vid = 0; vid < nodesize; vid++) {
 		nodelist[vid].flaga = false;
 	}
-	
+
 	int num_visited = 0;
 	while (Queue.size() > 0) {
 		double min_dist = Queue.top().first;
 		VertexID vid = Queue.top().second;
 		if (vid == target) break;
 		Queue.pop();
-		if (min_dist > dist[vid]) {/*cout << "Greater!?" << endl;*/ continue;} // lazy update; 
+		if (min_dist > dist[vid]) {/*cout << "Greater!?" << endl;*/ continue;} // lazy update;
 		else nodelist[vid].flaga = true; // settle vertex vid;
-		
+
 		num_visited++;
-		
+
 		forall_outneighbors(graph, vid, eit){
 			if (nodelist[eit->target].flaga) continue; // settled;
 			if (dist[eit->target] > min_dist + eit->weight) {
 				dist[eit->target] = min_dist + eit->weight;
-				Queue.push(make_pair(dist[eit->target], eit->target)); 
+				Queue.push(make_pair(dist[eit->target], eit->target));
 				father[eit->target] = vid;
-			}	
-		}		
+			}
+		}
 	}
-	
-	
+
+
 	// print path;
 	vector<int> path;
 	path.push_back(target);
@@ -590,33 +590,33 @@ double Contraction::runDijkstra(VertexID source, VertexID target){
 		cout << dist[path[i]] << " ";
 	}
 	cout << endl;
-	
+
 	forall_nodes(graph, vid){
 		nodelist[vid].flaga = false;
-	}		
-	
+	}
+
 	return dist[target];
 }
 
 void Contraction::checkShortCutCompleteness(int sampleSize = 1000){
 	int count = 0;
-	for (int i = 0; i < sampleSize; i++) {
+	for (int sample = 0; sample < sampleSize; sample++) {
 		VertexID source;
 		VertexID target;
-		
+
 		while (true) {
 			source = rand() % nodesize;
-			target = rand() % nodesize;	
+			target = rand() % nodesize;
 			if (source != target) break;
 		}
-		
+
 		double result_without_shortcut = runDijkstra(source, target);
-		
+
 		vector<VertexID> fromSourceNode, fromTargetNode;
 		vector<Weight> fromSourceDist, fromTargetDist;
 		runShortcutDijkstra(source, fromSourceNode, fromSourceDist);
 		runShortcutDijkstra(target, fromTargetNode, fromTargetDist);
-		
+
 		double dist = DBL_INFINITY;
 		int meet_node = -1;
 		int i = 0, j = 0;
@@ -643,9 +643,9 @@ void Contraction::checkShortCutCompleteness(int sampleSize = 1000){
 			}else if (fromSourceNode[i] < fromTargetNode[j]) i++;
 			else j++;
 		}
-		
+
 		cout << "Without shortcut: " << result_without_shortcut << endl;
-		cout << "With shortcut: " << dist << ", middle point: " << meet_node << endl;	
+		cout << "With shortcut: " << dist << ", middle point: " << meet_node << endl;
 		if (fabs(result_without_shortcut - dist) > 1e-5) {
 			cout << "Wrong!" << endl;
 			runDijkstra(source, meet_node);
@@ -654,46 +654,46 @@ void Contraction::checkShortCutCompleteness(int sampleSize = 1000){
 			exit(0);
 		}
 	}
-	
+
 	cout << "Test size: " << sampleSize << ", wrong: " << count << endl;
 }
 
 void Contraction::runShortcutDijkstra(VertexID source, vector<VertexID>& nodeList, vector<Weight>& distanceList){
-	//cout << "Test: source = " << source << ", target = " << target << "." << endl; 
+	//cout << "Test: source = " << source << ", target = " << target << "." << endl;
 	vector<double> dist (nodesize);
 	for ( int vid = 0; vid < nodesize; vid++) {
 		dist[vid] = DBL_INFINITY;
 	}
 	dist[source] = 0.0;
-	
+
 	vector<VertexID> father(nodesize, -1);
-	
+
 	priority_queue<pair<double, VertexID>, vector<pair<double, VertexID> >, QueueComp> Queue;
 	Queue.push(make_pair(0.0, source));
-	
+
 	for ( int vid = 0; vid < nodesize; vid++) {
 		nodelist[vid].flaga = false;
 	}
-	
+
 	int num_visited = 0;
 	while (Queue.size() > 0) {
 		double min_dist = Queue.top().first;
 		VertexID vid = Queue.top().second;
 		//cout << "vid: " << vid << ", min_dist: " << min_dist << endl;
 		Queue.pop();
-		if (min_dist > dist[vid]) {/*cout << "Greater!?" << endl;*/ continue;} // lazy update; 
+		if (min_dist > dist[vid]) {/*cout << "Greater!?" << endl;*/ continue;} // lazy update;
 		else nodelist[vid].flaga = true; // settle vertex vid;
-		
+
 		num_visited++;
-		
+
 		forall_outneighbors(graph, vid, eit){
 			if (nodelist[eit->target].flaga) continue; // settled;
 			if (nodelist[eit->target].rank < nodelist[vid].rank /*&& vid != source*/) continue; // using rank filter;
 			if (dist[eit->target] > min_dist + eit->weight) {
 				dist[eit->target] = min_dist + eit->weight;
-				Queue.push(make_pair(dist[eit->target], eit->target)); 
+				Queue.push(make_pair(dist[eit->target], eit->target));
 				father[eit->target] = vid;
-			}	
+			}
 		}
 
 		for (int i = 0; i < tmpoutshortcutlist[vid].size(); i++) {
@@ -714,42 +714,42 @@ void Contraction::runShortcutDijkstra(VertexID source, vector<VertexID>& nodeLis
 			}
 		}
 	}
-		
-	
+
+
 	for (int i = 0; i < nodesize; i++) {
 		if (dist[i] < DBL_INFINITY) {
 			nodeList.push_back(i);
 			distanceList.push_back(dist[i]);
 		}
 	}
-	
+
 	for (int i = 0; i < nodeList.size(); i++) {
 		cout << "[" << nodeList[i] << ", " << distanceList[i] << "] ";
 	}
 	cout << endl;
-	
+
 	for ( int vid = 0; vid < nodesize; vid++) {
 		nodelist[vid].flaga = false;
-	}	
+	}
 }
 
 void Contraction::storePathInfo(int source, int target, vector<VertexID>& father, vector<vector<VertexID> >& pathInfo) {
 	if (pathInfo[target].size() != 0) return;
-	cout << "source: " << source << ", target: " << target << endl;	
-	
+	cout << "source: " << source << ", target: " << target << endl;
+
 	if (father[source] != -1 && pathInfo[source].size() == 0) {
 		int f = father[source];
 		storePathInfo(f, source, father, pathInfo);
 	}
-	
-	// cout << "source: " << source << ", target: " <<  target << endl;	
+
+	// cout << "source: " << source << ", target: " <<  target << endl;
 	// copy father's path;
 	for ( int i = 0; i < pathInfo[source].size(); i++ ) {
 		// cout << pathInfo[source][i] << " ";
 		pathInfo[target].push_back(pathInfo[source][i]);
-	}	
+	}
 	// cout << endl;
-		
+
 	// check the original graph;
 	// if they are linked by the simple edge, only
 	// target node is added to the path;
@@ -760,17 +760,17 @@ void Contraction::storePathInfo(int source, int target, vector<VertexID>& father
 			isfound = true;
 			pathInfo[target].push_back(target);
 			break;
-			
+
 			cout << "target (original): " << target << ": ";
 			for (int i = 0; i < pathInfo[target].size(); i++) {
 				cout << pathInfo[target][i] << " ";
 			}
 			cout << endl;
 		}
-	}	
+	}
 	if (isfound) return;
 	// check the short cut graph;
-	// if they are linked by the shortcut, 
+	// if they are linked by the shortcut,
 	// the inner vertex ids and the target node are added to the path;
 	forall_outshortcuts(graph, source, eit){
 		if (eit->target == target) {
@@ -778,17 +778,17 @@ void Contraction::storePathInfo(int source, int target, vector<VertexID>& father
 			for(int i = 0; i < eit->innerIDs.size(); i++){
 				pathInfo[target].push_back(eit->innerIDs[i]);
 			}
-			pathInfo[target].push_back(target);	
+			pathInfo[target].push_back(target);
 
 			cout << "target (shortcut): " << target << ": ";
 			for (int i = 0; i < pathInfo[target].size(); i++) {
 				cout << pathInfo[target][i] << " ";
 			}
 			cout << endl;
-			
+
 			return;
 		}
-	}	
+	}
 }
 
 /* @parameter:
@@ -809,9 +809,9 @@ void Contraction::buildPathIndex(VertexID source, vector<VertexID>& father,\
 	forall_outneighbors(graph, vid, eit) {
 		VertexID uid = eit->target;
 		if (father[uid] != vid) continue;
-		
+
 		// cout << "child: " << uid << endl;
-		
+
 		if (!new_path) {
 			index_list[0][uid] = index_list[0][vid];
 			index_list[1][uid] = index_list[1][vid]+1;
@@ -827,17 +827,17 @@ void Contraction::buildPathIndex(VertexID source, vector<VertexID>& father,\
 			pathList[source].push_back(uid);
 			index_list[1][uid] = pathList[source].size();
 		}
-		
+
 		buildPathIndex(source, father, index_list, path_stack, new_path);
 		path_stack.pop_back();
 	}
-	
+
 	forall_outshortcuts(graph, vid, eit) {
 		VertexID uid = eit->target;
 		if (father[uid] != vid) continue;
-		
+
 		// cout << "short child: " << uid << endl;
-		
+
 		if (!new_path) {
 			// cout << "old?" << endl;
 			index_list[0][uid] = index_list[0][vid];
@@ -845,11 +845,11 @@ void Contraction::buildPathIndex(VertexID source, vector<VertexID>& father,\
 			for (int i = 0; i < eit->innerIDs.size(); i++) {
 				pathList[source].push_back(eit->innerIDs[i]);
 			}
-			path_stack.push_back(uid);			
+			path_stack.push_back(uid);
 			pathList[source].push_back(uid);
 		}else {
 			// cout << "b " << index_list[0][vid] << ", e " << index_list[1][vid] << endl;
-			index_list[0][uid] = pathList[source].size();		
+			index_list[0][uid] = pathList[source].size();
 			// cout << "new!" << endl;
 			// cout << "vid " << vid << endl;
 			new_path = false;
@@ -860,74 +860,74 @@ void Contraction::buildPathIndex(VertexID source, vector<VertexID>& father,\
 			}
 			for (int i = 0; i < eit->innerIDs.size(); i++) {
 				pathList[source].push_back(eit->innerIDs[i]);
-			}			
+			}
 			pathList[source].push_back(uid);
 			index_list[1][uid] = pathList[source].size();
 		}
-		
+
 		buildPathIndex(source, father, index_list, path_stack, new_path);
-		path_stack.pop_back();		
+		path_stack.pop_back();
 	}
-	
+
 	new_path = true;
 }
 
 // create label for each vertex by Dijkstra algorithm on extended graphs;
 void Contraction::createLabel(VertexID source, bool gp){
-	//cout << "Test: source = " << source << ", target = " << target << "." << endl; 
+	//cout << "Test: source = " << source << ", target = " << target << "." << endl;
 	vector<double> dist (nodesize);
 	for (int vid = 0; vid < nodesize; vid++) dist[vid] = DBL_INFINITY;
 	dist[source] = 0.0;
-	
+
 	vector<VertexID> father(nodesize, numeric_limits<VertexID>::max());
-	
+
 	priority_queue<pair<double, VertexID>, vector<pair<double, VertexID> >, QueueComp> Queue;
 	Queue.push(make_pair(0.0, source));
-	
+
 	for (int vid = 0; vid < nodesize; vid++) nodelist[vid].flaga = false;
-	
+
 	while (Queue.size() > 0) {
 		double min_dist = Queue.top().first;
 		VertexID vid = Queue.top().second;
 		//cout << "vid = " << vid << ", min_dist = " << min_dist << endl;
 
 		Queue.pop();
-		if (min_dist > dist[vid]) {/*cout << "Greater!?" << endl;*/ continue;} // lazy update; 
+		if (min_dist > dist[vid]) {/*cout << "Greater!?" << endl;*/ continue;} // lazy update;
 		else nodelist[vid].flaga = true; // settle vertex vid;
-		
+
 		forall_outneighbors(graph, vid, eit){
 			if (nodelist[eit->target].flaga) continue; // settled;
 			if (/*vid != source &&*/ nodelist[eit->target].rank < nodelist[vid].rank) continue;
 			if (dist[eit->target] > min_dist + eit->weight) {
 				dist[eit->target] = min_dist + eit->weight;
-				Queue.push(make_pair(dist[eit->target], eit->target)); 
+				Queue.push(make_pair(dist[eit->target], eit->target));
 				father[eit->target] = vid;
-			}	
+			}
 		}
-		
+
 		forall_outshortcuts(graph, vid, eit){
 			if (nodelist[eit->target].flaga) continue; // settled;
-			if (/*vid != source &&*/ nodelist[eit->target].rank < nodelist[vid].rank) continue;		
+			if (/*vid != source &&*/ nodelist[eit->target].rank < nodelist[vid].rank) continue;
 			double found = false;
 			for (int j = 0; j < eit->innerIDs.size(); j++){
 				VertexID iv = eit->innerIDs[j];
 				// if (dist[iv] >= dist[eit->target]) {found = true; break;}
 				if (dist[iv] <= dist[vid]) {found = true; break;}
 			}
-			if (found) continue;			
+			if (found) continue;
 			if (dist[eit->target] > min_dist + eit->weight) {
 				dist[eit->target] = min_dist + eit->weight;
-				Queue.push(make_pair(dist[eit->target], eit->target)); 
+				Queue.push(make_pair(dist[eit->target], eit->target));
 				father[eit->target] = vid;
-			}	
-		}		
+			}
+		}
 	}
-	
+
 	if (/*inlabellist.size() < nodesize ||*/ outlabellist.size() < nodesize) {
 		//inlabellist.resize(nodesize);
 		outlabellist.resize(nodesize);
 	}
-	
+
 	// add in inlabellist and outlabellist;
 	for (int vid = 0; vid < nodesize; vid++) {
 		if (dist[vid] < DBL_INFINITY) {
@@ -939,14 +939,14 @@ void Contraction::createLabel(VertexID source, bool gp){
 			//inlabellist[vid].push_back(tmp_label);
 		}
 	}
-	
+
 	// for test
 	// cout << "For " << source << endl;
 	// for (int i = 0; i < outlabellist[source].size(); i++){
-		// cout << outlabellist[source][i].id << " " << outlabellist[source][i].distance << endl; 
+		// cout << outlabellist[source][i].id << " " << outlabellist[source][i].distance << endl;
 	// }
 	// exit(0);
-	
+
 	// for debug,
 	/*for (int i = 0; i < outlabellist[source].size(); i++){
 		int vid = outlabellist[source][i].id;
@@ -966,24 +966,24 @@ void Contraction::createLabel(VertexID source, bool gp){
 		for (int i = path.size()-1; i>=0; i--) {
 			cout << dist[path[i]] << " ";
 		}
-		cout << endl;					
+		cout << endl;
 	}*/
-	
+
 	/***********************************************************************/
 	// for debug, check the correctness of labels;
 	/*
 	for (int i = 0; i < outlabellist[source].size(); i++){
 		int vid = outlabellist[source][i].id;
 		double d = outlabellist[source][i].distance;
-		
+
 		cout << "D W: " << source << " vs " << vid << endl;
-		
+
 		double r_dijkstra = runDijkstra(source, vid);
-		
+
 		if (fabs(r_dijkstra - d) >= 1e-5) {
 			cerr << "WRONG: " << endl;
 			cerr << source << "-->" << vid << ": " << d << " vs " << r_dijkstra << endl;
-			
+
 			// if wrong, compare their paths;
 			vector<int> path;
 			path.push_back(vid);
@@ -1001,13 +1001,13 @@ void Contraction::createLabel(VertexID source, bool gp){
 			for (int i = path.size()-1; i>=0; i--) {
 				cout << dist[path[i]] << " ";
 			}
-			cout << endl;			
+			cout << endl;
 		}
 	}*/
-	/***********************************************************************/	
-	
-	if (!gp) return; 
-	
+	/***********************************************************************/
+
+	if (!gp) return;
+
 	// create path information for unpacking path;
 	vector<vector<int> > index_list(2, vector<int>(nodesize, 0));
 	vector<VertexID> path_stack;
@@ -1016,8 +1016,8 @@ void Contraction::createLabel(VertexID source, bool gp){
 	index_list[0][source] = 0; // beginning of the path;
 	index_list[1][source] = 1; // end of the path + 1;
 	pathList[source].push_back(source);
-	buildPathIndex(source, father, index_list, path_stack, new_path);	
-	
+	buildPathIndex(source, father, index_list, path_stack, new_path);
+
 	// create path index for each node;
 	for (int vid = 0; vid < nodesize; vid++) {
 		if (dist[vid] < DBL_INFINITY) {
@@ -1025,7 +1025,7 @@ void Contraction::createLabel(VertexID source, bool gp){
 			pathIndex[source].push_back(index_list[1][vid]);
 		}
 	}
-	
+
 	#ifdef CONTRACTION_DEBUG
 		cout << "source: " << source << endl;
 		cout << "father: " << endl;
@@ -1033,10 +1033,10 @@ void Contraction::createLabel(VertexID source, bool gp){
 			cout << "[" << i << " " << father[i] << "] ";
 		}
 		cout << endl;
-		
+
 		cout << "index_list: " << endl;
 		for (int i = 0; i < index_list[0].size(); i++) {
-			cout << "[" << i << " " << index_list[0][i] << " " << index_list[1][i] << "] "; 
+			cout << "[" << i << " " << index_list[0][i] << " " << index_list[1][i] << "] ";
 		}
 		cout << endl;
 		cout << "dist: " << endl;
@@ -1052,9 +1052,9 @@ void Contraction::checkLabelCorrectness(void){
 	int count = 0;
 	for (int source = 0; source < nodesize; source++) {
 		for (int target = source+1; target < nodesize; target++) {
-		
+
 			double result_without_shortcut = runDijkstra(source, target); // using dijkstra algorithm;
-			
+
 			// using label information;
 			double dist = DBL_INFINITY;
 			int meet_node = -1;
@@ -1082,10 +1082,10 @@ void Contraction::checkLabelCorrectness(void){
 				}else if (outlabellist[source][i].id < outlabellist[target][j].id) i++;
 				else j++;
 			}
-			
+
 			cout << "source: " << source << ", target: " << target << endl;
 			cout << "Without shortcut: " << result_without_shortcut << endl;
-			cout << "With shortcut: " << dist << ", middle point: " << meet_node << endl;	
+			cout << "With shortcut: " << dist << ", middle point: " << meet_node << endl;
 			if (fabs(result_without_shortcut - dist) > 1e-5) {
 				cout << "Wrong!" << endl;
 				runDijkstra(source, meet_node);
@@ -1101,31 +1101,31 @@ void Contraction::checkPathCorrectness(void){
 	for (int source = 0; source < nodesize; source++) {
 		cout << source << ": #path: " << pathIndex[source].size() << endl;
 		for (int j = 0; j < pathIndex[source].size(); j+=2) {
-			
+
 			int begin = pathIndex[source][j];
 			int end = pathIndex[source][j+1];
-			
+
 			// print
 			cout << "source: " << source << ", target = " << outlabellist[source][j/2].id;
 			cout << ", weight = " << outlabellist[source][j/2].distance << endl;
 			cout << "begin = " << begin << ", end = " << end << endl;
-			
+
 			cout << "path: ";
 			for (int k = begin; k < end; k++) {
 				cout << pathList[source][k] << " ";
 			}
 			cout << endl;
-			
+
 			/* two things to check:
 				1. no shortcut;
 				2. distance matches the label distance;
-			*/			
+			*/
 			double dist = 0;
 			cout << source << " ";
 			for (int k = begin; k < end-1; k++) {
 				int uid = pathList[source][k];
 				int vid = pathList[source][k+1];
-				
+
 				bool found = false;
 				forall_outneighbors(graph, uid, eit) {
 					if (eit->target == vid) {
@@ -1135,7 +1135,7 @@ void Contraction::checkPathCorrectness(void){
 						break;
 					}
 				}
-				
+
 				if (!found) {
 					cout << "the edge can not be found: " << uid << " -> " << vid << endl;
 					forall_outshortcuts(graph, uid, eit) {
@@ -1150,14 +1150,14 @@ void Contraction::checkPathCorrectness(void){
 					}
 				}
 			}
-			cout << endl;			
+			cout << endl;
 			if (fabs(dist - outlabellist[source][j/2].distance) > 1e-5) {
 				cout << "the distance does not match by using dijkstra: " << dist << endl;
 				count++;
 			}
 		}
 	}
-	cout << "# wrong paths: " << count << endl; 
+	cout << "# wrong paths: " << count << endl;
 }
 
 void Contraction::generateLabel(bool gp) {
@@ -1165,21 +1165,21 @@ void Contraction::generateLabel(bool gp) {
 		cout << "generate label: " << i << endl;
 		createLabel(i, gp);
 	}
-	
+
 	// createLabel(36719, gp);
 	// for (int i=0; i < outlabellist[36719].size(); i++){
 		// cout << outlabellist[36719][i].id << " " << outlabellist[36719][i].distance << endl;
 	// }
-	
+
 	// exit(0);
-	
+
 	//printLabel();
 	//printPath();
-	
+
 	graph.insertShortcut(tmpinshortcutlist, tmpoutshortcutlist);
 	graph.insertLabelList(inlabellist, outlabellist);
 	//graph.exportPathIndex().swap(pathIndex);
-	//graph.exportPathList().swap(pathList);	
+	//graph.exportPathList().swap(pathList);
 }
 
 vector<ShortCuts>& Contraction::exportOutShortcut(void) {
@@ -1210,7 +1210,7 @@ void Contraction::printLabel(){
 			// cout << "[" << inlabellist[i][j].id << ", " << inlabellist[i][j].distance << "] ";
 		// }
 		// cout << endl;
-	// }	
+	// }
 }
 
 void Contraction::printPath(){

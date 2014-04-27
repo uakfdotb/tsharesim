@@ -1,4 +1,4 @@
-#include "lp_lib.h"
+#include "lpsolve/lp_lib.h"
 #include "includes.h"
 #include "path.h"
 #include "taxiPath.h"

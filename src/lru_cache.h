@@ -15,6 +15,21 @@
 #include <cassert>
 #include <stdint.h>
 
+#ifndef __LP64__
+using namespace __gnu_cxx;
+namespace __gnu_cxx {
+	template<>
+	struct hash<uint64_t>
+	{
+		size_t operator()(uint64_t x) const
+		{
+			return x;
+		};
+	};
+}
+#endif
+
+
 namespace {
 
 //-------------------------------------------------------------
@@ -25,13 +40,13 @@ template<class K, class V>
 struct LRUCacheH4Value
 {
         typedef std::pair<const K, LRUCacheH4Value<K, V> > Val;
-        
+
         LRUCacheH4Value()
                 : _v(), _older(NULL), _newer(NULL) { }
-        
+
         LRUCacheH4Value(const V & v, Val * older, Val * newer)
-                : _v(v), _older(older), _newer(newer) { } 
-        
+                : _v(v), _older(older), _newer(newer) { }
+
         V _v;
         Val * _older;
         Val * _newer;
@@ -50,20 +65,20 @@ public:
         typedef LRUCacheH4ConstIterator<K, V> const_iterator;
         typedef Val & reference;
         typedef Val * pointer;
-        
+
         enum DIRECTION {
                 MRU_TO_LRU = 0,
                 LRU_TO_MRU
         };
-        
+
         LRUCacheH4ConstIterator(const Val * ptr = NULL, DIRECTION dir = MRU_TO_LRU);
-        
+
         const_iterator & operator++();
     const_iterator operator++(int);
-        
+
         bool operator==(const const_iterator & other);
         bool operator!=(const const_iterator & other);
-        
+
         const K & key() const;
         const V & value() const;
 
@@ -89,7 +104,7 @@ LRUCacheH4ConstIterator<K, V> & LRUCacheH4ConstIterator<K, V>::operator++()
         _ptr = (_dir == LRUCacheH4ConstIterator<K, V>::MRU_TO_LRU ? _ptr->second._older : _ptr->second._newer);
         return *this;
 }
-        
+
 
 template<class K, class V>
 LRUCacheH4ConstIterator<K, V> LRUCacheH4ConstIterator<K, V>::operator++(int)
@@ -105,7 +120,7 @@ bool LRUCacheH4ConstIterator<K, V>::operator==(const const_iterator & other)
 {
         return _ptr == other._ptr;
 }
-        
+
 
 template<class K, class V>
 bool LRUCacheH4ConstIterator<K, V>::operator!=(const const_iterator & other)
@@ -125,11 +140,11 @@ const K & LRUCacheH4ConstIterator<K, V>::key() const
 template<class K, class V>
 const V & LRUCacheH4ConstIterator<K, V>::value() const
 {
-        assert(_ptr); 
+        assert(_ptr);
         return _ptr->second._v;
 }
-        
-        
+
+
 } // file scope
 
 
@@ -144,24 +159,24 @@ class LRUCacheH4
 {
 public:
         typedef LRUCacheH4ConstIterator<K, V> const_iterator;
-        
+
 public:
         LRUCacheH4(int maxsize);                    // Pre-condition: maxsize >= 1
         LRUCacheH4(const LRUCacheH4 & other);
-        
+
         V & operator[](const K & key);
         void insert(const K & key, const V & value);
-        
+
         int size() const;
         int maxsize() const;
         bool empty() const;
-        
+
         const_iterator find(const K & key);         // updates the MRU
         const_iterator find(const K & key) const;   // does not update the MRU
         const_iterator mru_begin() const;           // from MRU to LRU
         const_iterator lru_begin() const;           // from LRU to MRU
         const_iterator end() const;
-        
+
         void dump_mru_to_lru(std::ostream & os) const;
 
 private:
@@ -225,10 +240,10 @@ int LRUCacheH4<K, V>::size() const
 {
         return _map.size();
 }
-        
-        
+
+
 template<class K, class V>
-int LRUCacheH4<K, V>::maxsize() const 
+int LRUCacheH4<K, V>::maxsize() const
 {
         return _maxsize;
 }
@@ -259,13 +274,13 @@ template<class K, class V>
 typename LRUCacheH4<K, V>::const_iterator LRUCacheH4<K, V>::find(const K & key) const
 {
         typename MAP_TYPE::iterator it = _map.find(key);
-        
+
         if (it != _map.end())
                 return const_iterator(&*it, const_iterator::MRU_TO_LRU);
         else
                 return end();
 }
-        
+
 
 template<class K, class V>
 void LRUCacheH4<K, V>::dump_mru_to_lru(std::ostream & os) const
@@ -315,25 +330,25 @@ typename LRUCacheH4<K, V>::Val * LRUCacheH4<K, V>::_update(typename MAP_TYPE::it
         Val * older = v._older;
         Val * newer = v._newer;
         Val * moved = &*it;
-        
+
         // possibly update the LRU
         if (moved == _lru && _lru->second._newer)
                 _lru = _lru->second._newer;
-        
+
         if (moved != _mru) {
                 // "remove" key from current position
                 if (older)
                         older->second._newer = newer;
                 if (newer)
                         newer->second._older = older;
-                
+
                 // "insert" key to MRU position
                 v._older = _mru;
                 v._newer = NULL;
                 _mru->second._newer = moved;
                 _mru = moved;
         }
-        
+
         return moved;
 }
 
@@ -350,7 +365,7 @@ typename LRUCacheH4<K, V>::Val * LRUCacheH4<K, V>::_insert(const K & key)
                 }
                 _map.erase(old_lru->first);
         }
-        
+
         // insert key to MRU position
         std::pair<typename MAP_TYPE::iterator, bool> ret
                 = _map.insert_unique(Val(key, LRUCacheH4Value<K, V>(V(), _mru, NULL)));
@@ -358,16 +373,15 @@ typename LRUCacheH4<K, V>::Val * LRUCacheH4<K, V>::_insert(const K & key)
         if (_mru)
                 _mru->second._newer = inserted;
         _mru = inserted;
-        
+
         // possibly update the LRU
         if (!_lru)
                 _lru = _mru;
         else if (!_lru->second._newer)
                 _lru->second._newer = _mru;
-        
+
         return inserted;
 }
 
 
 }  // namespace plb
-
