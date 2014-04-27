@@ -1,0 +1,22 @@
+Required libraries:
+	- lpsolve (http://lpsolve.sourceforge.net/)
+
+Compiling:
+	make
+
+Executing:
+	./simulator algorithm_selection [maximum passengers] [number taxis] [constraint scale factor]
+	 
+	 algorithm_selection
+	 	0 for branch and bound
+	 	1 for brute force
+	 	2 for mixed integer programming
+	 	3 for basic tree
+	 	4 for tree with slack time
+	 	5 for tree with slack time, clustering
+ 	maximum passengers: maximum passengers assigned to taxi at a time
+ 		default is 4
+	number taxis: number of taxis to simulate
+		default is 20,000
+	constraint scale factor (percentage): multiplied by SERVICE_CONST and PICKUP_CONST defined in simulator.cpp
+		default is 100
