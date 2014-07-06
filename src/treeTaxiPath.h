@@ -94,13 +94,16 @@ private:
 	TreeNode *root;
 	TreeNode *rootTemp;
 	bool flag; //1 if value was just called, 0 otherwise
-	
+
 	long nextPair;
+
+	double pickupConstraint;
+	double serviceConstraint;
 
 public:
 	TreeTaxiPath(ShortestPath *shortestPath, vertex *curr); //currNode is index of the vertex that taxi is currently at or heading towards
 	~TreeTaxiPath();
-	
+
 	virtual void moved(double distance);
 	virtual double value(vertex *curr, vertex *source, vertex *dest); //tests pushing (source, dest)
 	virtual void cancel(); //cancels the value() call
@@ -108,10 +111,13 @@ public:
 	virtual bool step(bool move); //next() becomes curr(); goes one vertex forward, when curr() is passed
 	virtual queue<vertex *> next(); //returns next vertex that the taxi should go to after curr() is passed; -1 if no next
 	virtual queue<vertex *> curr(vertex *curr); //returns the vertex that the taxi is currently at or heading towards
-	
+
 	virtual int size() { return 0; }
 	virtual void printPoints(); //prints current point array
 	virtual int getNumberNodes() { return root->getNumberNodes(); } //calls getNumberNodes on the root node
+
+	virtual bool dynamicConstraints() { return true; } //whether this taxipath supports dynamic constraints
+	virtual void setConstraints(double pickup_constraint, double service_constraint) { pickupConstraint = pickup_constraint; serviceConstraint = service_constraint; };
 
 private:
 	double euclidean(double ax, double ay, double bx, double by); //returns shortest path from source to dest

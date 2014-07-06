@@ -62,6 +62,9 @@ double SERVICE_CONST = 1.2;
 // pickup time is the time between request submission and passenger pickup
 double PICKUP_CONST = 0.08448;
 
+//whether to attempt to use dynamic constraints and try looser constraints first
+bool DYNAMIC_CONSTRAINTS = false;
+
 //taxi speed, measured in GPS coordinates per second
 const double D = 0.0001408;
 
@@ -104,8 +107,12 @@ vector<int> passengerSizes;
 // these are time needed to call value() for specific passenger numbers
 deque<long> *passengerValueTimes;
 
+//keeps track of constraint factor used for passengers
+deque<double> constraintFactors;
+
 //total number of customers who could not be assigned to any taxi
 int unsatisfiedCustomers = 0;
+int satisfiedCustomers = 0;
 
 //array of vertices in the graph
 vector<vertex *> vertices;
@@ -115,6 +122,7 @@ double avgTopPassengers = 0.0;
 double avgPassengers = 0.0;
 int maxPassengers = 0;
 int countNoPassengers = 0;
+double personDistanceTraveled;
 
 void customerSimulator();
 void taxiSimulator();
@@ -494,38 +502,46 @@ void customerSimulator()
 		for(itr = iterationTimes.begin(); itr != iterationTimes.end(); itr++) {
 			totalIterationTime += *itr;
 		}
-		
+
 		double averageCustomerResponseTime = (double) totalCustomerResponseTime / customerResponseTimes.size();
 		double averageIterationTime = (double) totalIterationTime / iterationTimes.size();
-		
+
 		//some other statistics...
 		double residentSetSize;
 		double vmUsage;
 		process_mem_usage(residentSetSize, vmUsage);
-		
-		fprintf(stdout, "it=%d  %f %1.5f %1.5f %d %d %10.5f %10.5f %1.1f %1.1f %d", logicalTime, customers.totalQtime/customers.assignedCount, avgPassengers, avgTopPassengers, maxPassengers, countNoPassengers, averageCustomerResponseTime, averageIterationTime, residentSetSize, vmUsage, unsatisfiedCustomers);
-		
+
+		//constraint factor average
+		double constraintFactorAverage = 0;
+		deque<double>::iterator itrDouble;
+		for(itrDouble = constraintFactors.begin(); itrDouble != constraintFactors.end(); itrDouble++) {
+			constraintFactorAverage += *itrDouble;
+		}
+		constraintFactorAverage /= constraintFactors.size();
+
+		fprintf(stdout, "it=%d  %f %1.5f %1.5f %d %d %10.5f %10.5f %1.1f %1.1f %d/%d %1.5f %1.5f", logicalTime, customers.totalQtime/customers.assignedCount, avgPassengers, avgTopPassengers, maxPassengers, countNoPassengers, averageCustomerResponseTime, averageIterationTime, residentSetSize, vmUsage, unsatisfiedCustomers, satisfiedCustomers, constraintFactorAverage, personDistanceTraveled);
+
 		for(int i = 0; i < MAX_PASSENGERS; i++) {
 			long passengerValueTotal = 0;
 			for(itr = passengerValueTimes[i].begin(); itr != passengerValueTimes[i].end(); itr++) {
 				passengerValueTotal += *itr;
 			}
-			
+
 			double passengerValueAverage = (double) passengerValueTotal / passengerValueTimes[i].size();
 			cout << " " << passengerValueAverage;
 		}
-		
+
 		cout << endl;
-		
+
 		//process the requests and update taxi positions
 		taxiSimulator();
-		
+
 		//update hash grid and calculate some statistics
 		updateTaxis();
 
 		logicalTime++;
 	}
-	
+
 	customerFile.close();
 }
 
@@ -533,37 +549,38 @@ void taxiSimulator()
 {
 	int i; //the current index in customer queue
 	int minTaxi; //the taxi with the shortest route
-	
+
 	//these define the box to search for taxis in grid filtering
 	int startLong;
 	int endLong;
 	int startLat;
 	int endLat;
-	
+
 	node *ptr; //the current node (position in linked list at current grid location)
 	customer *newCustomer;
-	
+
 	//update the taxi positions
 	for(int x = 0; x < MAX_TAXIS; x++) {
 		taxi[x].updateLocation();
+		personDistanceTraveled += D * taxi[x].passengers;
 	}
-	
+
 	struct timeval iterationStartTime;
 	struct timeval iterationEndTime;
 	gettimeofday(&iterationStartTime, NULL);
-	
+
 	//todo: get rid of i because it's always zero
 	i = 0;
-	
+
 	while((newCustomer = customers.peak(i)) != NULL && i < customers.customerCount) {
 		struct timeval customerStartTime;
 		struct timeval customerEndTime;
 		gettimeofday(&customerStartTime, NULL);
-		
+
 		//values for finding the taxi with the minimum path for this request
 		minTaxi = -1;
 		double minValue = -1;
-		
+
 		//find taxis close to the request's pickup point using grid filtering
 		startLong = newCustomer->hashLong-SPATIAL_INDEX;
 		endLong = startLong+SPATIAL_LIMIT;
@@ -585,60 +602,82 @@ void taxiSimulator()
 			endLat = 0;
 		else if(endLat > HASHER*2-1)
 			endLat = HASHER*2-1;
-		
-		//loop through the grid
-		//each grid cell has a linked list of taxis
-		for(int x = startLong; x <= endLong; x++) {
-			for(int y = startLat; y <= endLat; y++) {
-				//go through the linked list and try each taxi that's not full
-				ptr = spatialHash[x][y].returnHead();
-				
-				while(ptr != NULL) {
-					if(taxi[ptr->vehicle].passengers < MAX_PASSENGERS) {
-						struct timeval valueStartTime;
-						struct timeval valueEndTime;
-						gettimeofday(&valueStartTime, NULL);
-						
-						double value = taxi[ptr->vehicle].value(newCustomer->pickup, newCustomer->dropoff);
-						
-						//calculate time needed to process this request
-						gettimeofday(&valueEndTime, NULL);
-						long tS = valueStartTime.tv_sec*1000000 + (valueStartTime.tv_usec);
-						long tE = valueEndTime.tv_sec*1000000	+ (valueEndTime.tv_usec);
-						long valueTime = tE - tS;
-						passengerValueTimes[taxi[ptr->vehicle].passengers].push_back(valueTime);
-						
-						if((minTaxi == -1 || value < minValue) && value >= 0) { //this taxi is better than our current best
-							if(minTaxi != -1) { //we do have a current best
-								//let the current best know that it will not be chosen
-								taxi[minTaxi].cancel();
+
+		//try smaller constraints if taxitree instance supports it
+		double constraintFactor = 1.0;
+		if(taxi[0].dynamicConstraints() && DYNAMIC_CONSTRAINTS) {
+			constraintFactor = 0.125;
+		}
+
+		for(; constraintFactor <= 1.0; constraintFactor *= 2) {
+			//loop through the grid
+			//each grid cell has a linked list of taxis
+			for(int x = startLong; x <= endLong; x++) {
+				for(int y = startLat; y <= endLat; y++) {
+					//go through the linked list and try each taxi that's not full
+					ptr = spatialHash[x][y].returnHead();
+
+					while(ptr != NULL) {
+						if(taxi[ptr->vehicle].passengers < MAX_PASSENGERS) {
+							struct timeval valueStartTime;
+							struct timeval valueEndTime;
+							gettimeofday(&valueStartTime, NULL);
+
+							if(taxi[ptr->vehicle].dynamicConstraints()) {
+								taxi[ptr->vehicle].setConstraints(constraintFactor * PICKUP_CONST, constraintFactor * SERVICE_CONST);
 							}
-							
-							//update minimum information
-							minTaxi = ptr->vehicle;
-							minValue = value;
-						} else {
-							//make sure this taxi knows it won't be chosen
-							taxi[ptr->vehicle].cancel();
+
+							double value = taxi[ptr->vehicle].value(newCustomer->pickup, newCustomer->dropoff);
+
+							//calculate time needed to process this request
+							gettimeofday(&valueEndTime, NULL);
+							long tS = valueStartTime.tv_sec*1000000 + (valueStartTime.tv_usec);
+							long tE = valueEndTime.tv_sec*1000000	+ (valueEndTime.tv_usec);
+							long valueTime = tE - tS;
+							passengerValueTimes[taxi[ptr->vehicle].passengers].push_back(valueTime);
+
+							if((minTaxi == -1 || value < minValue) && value >= 0) { //this taxi is better than our current best
+								if(minTaxi != -1) { //we do have a current best
+									//let the current best know that it will not be chosen
+									taxi[minTaxi].cancel();
+								}
+
+								//update minimum information
+								minTaxi = ptr->vehicle;
+								minValue = value;
+							} else {
+								//make sure this taxi knows it won't be chosen
+								taxi[ptr->vehicle].cancel();
+							}
 						}
+
+						ptr = ptr->link;
 					}
-					
-					ptr = ptr->link;
 				}
 			}
+
+			if(minTaxi != -1) {
+				break;
+			}
 		}
-		
+
 		//check whether we found any taxi
-		
 		if(minTaxi != -1) {
 			//push the request onto the minimum-path taxi
 			taxi[minTaxi].passengers++;
 			taxi[minTaxi].push();
+
+			if(taxi[minTaxi].dynamicConstraints()) {
+				constraintFactors.push_back(constraintFactor);
+				//while(constraintFactors.size() > 1000) constraintFactors.pop_front();
+			}
+
+			satisfiedCustomers++;
 		} else {
 			//increase unsatisfied count for output
 			unsatisfiedCustomers++;
 		}
-		
+
 		//remove this customer from the queue and update queue
 		//the customer might have been accepted or rejected, but
 		// either way they get an instant response

@@ -151,3 +151,11 @@ void taxiTree :: push() {
 int taxiTree :: getNumberNodes() {
 	return taxiPath->getNumberNodes();
 }
+
+bool taxiTree :: dynamicConstraints() {
+	return taxiPath->dynamicConstraints();
+}
+
+void taxiTree :: setConstraints(double pickup_constraint, double service_constraint) {
+	taxiPath->setConstraints(pickup_constraint, service_constraint);
+}

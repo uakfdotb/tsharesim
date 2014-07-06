@@ -371,27 +371,27 @@ void TreeTaxiPath :: moved(double distance) {
 
 double TreeTaxiPath :: value(vertex *curr, vertex *source, vertex *dest) {
 	flag = true;
-	
+
 	root->vert = curr;
-	
-	TreeNode *pick = new TreeNode(NULL, source, true, nextPair++, PICKUP_CONST, false, 0, shortestPathC);
-	TreeNode *drop = new TreeNode(NULL, dest, false, pick->insert_uid, SERVICE_CONST * shortestPathC->shortestDistance(source, dest), false, 0, shortestPathC);
-	
+
+	TreeNode *pick = new TreeNode(NULL, source, true, nextPair++, pickupConstraint, false, 0, shortestPathC);
+	TreeNode *drop = new TreeNode(NULL, dest, false, pick->insert_uid, serviceConstraint * shortestPathC->shortestDistance(source, dest), false, 0, shortestPathC);
+
 	vector<TreeNode *> doInsert;
 	doInsert.push_back(pick);
 	doInsert.push_back(drop);
-	
+
 	rootTemp = root->clone();
 	bool copyResult = rootTemp->copyNodes(NULL, &doInsert);
-	
+
 	//clear our insertion vector elements
 	delete pick;
 	delete drop;
-	
+
 	//update node values to reflect insertion
 	double time = rootTemp->bestTime();
 	rootTemp->calculateTotalSlackTime();
-	
+
 	if(time != 0 && copyResult) return time;
 	else return -1;
 }

@@ -39,6 +39,8 @@ class taxiTree
 	void push(); //notification that the last request sent to value() has been assigned to _this_ taxi
 	int getNumberNodes(); //some number for statistical purposes approximating memory used; or simply the number of requests
 	void printPoints() { taxiPath->printPoints(); }
+	bool dynamicConstraints(); //whether this taxitree supports dynamic constraints
+	void setConstraints(double pickup_constraint, double service_constraint);
 };
 
 #endif
