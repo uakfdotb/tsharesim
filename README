@@ -46,3 +46,36 @@ Request format
 Requests are read from {inDirectory}/newtaxi.dat.
 
 Each line is tab-delimited and contains three integers that represent one request. These integers are, in order, the simulation time (see logicalTime in configuration) at which the request is submitted, the source vertex ID, and the destination vertex ID.
+
+Citations
+---------
+
+Please use the following citations when using the codes:
+
+1. Charles Tian, Yan Huang, Zhi Liu, Favyen Bastani, Ruoming Jin: Noah: a dynamic ridesharing system. SIGMOD Conference 2013: 985-988
+@inproceedings{DBLP:conf/sigmod/TianHLBJ13,
+  author    = {Charles Tian and
+               Yan Huang and
+               Zhi Liu and
+               Favyen Bastani and
+               Ruoming Jin},
+  title     = {Noah: a dynamic ridesharing system},
+  booktitle = {Proceedings of the {ACM} {SIGMOD} International Conference on Management
+               of Data, {SIGMOD} 2013, New York, NY, USA, June 22-27, 2013},
+  year      = {2013},
+  pages     = {985--988},
+}
+
+2. Yan Huang, Favyen Bastani, Ruoming Jin, Xiaoyang Sean Wang: Large Scale Real-time Ridesharing with Service Guarantee on Road Networks. PVLDB 7(14): 2017-2028 (2014)
+@article{DBLP:journals/pvldb/HuangBJW14,
+  author    = {Yan Huang and
+               Favyen Bastani and
+               Ruoming Jin and
+               Xiaoyang Sean Wang},
+  title     = {Large Scale Real-time Ridesharing with Service Guarantee on Road Networks},
+  journal   = {{PVLDB}},
+  year      = {2014},
+  volume    = {7},
+  number    = {14},
+  pages     = {2017--2028}
+}
