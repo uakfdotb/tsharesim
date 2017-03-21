@@ -50,7 +50,7 @@ Each line is tab-delimited and contains three integers that represent one reques
 Dataset
 -------
 
-Our dataset includes the graph files specifying the Shanghai road network (with 122,188 vertices and 173,867 edges), and a custom request dataset of ~400K requests based on Shanghai taxi trips.
+Our dataset includes the graph files specifying the Shanghai road network (with 122,188 vertices and 173,867 edges), and a customer request dataset of ~400K requests based on Shanghai taxi trips.
 
 The dataset can be downloaded from http://hpproliant.cse.unt.edu/rideshare_dataset/. Please contact Yan.Huang@unt.edu for the password.
 
